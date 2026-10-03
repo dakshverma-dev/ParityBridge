@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,8 @@ name = "qechybrid"
 version = "0.1.0"
 description = "GPU-accelerated hybrid QEC decoding pipeline (surface code + qLDPC BP+OSD)"
 readme = "README.md"
-license = { text = "MIT" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "NOTICE", "LICENSES/MIT-ccn.txt"]
 requires-python = ">=3.10"
 dependencies = [
   "numpy", "scipy", "pandas", "stim", "pymatching", "ldpc>=2.0", "torch",
