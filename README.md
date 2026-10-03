@@ -238,4 +238,4 @@ Full chronology with the numbers behind each statement: [docs/HISTORY.md](docs/H
 
 * Noise: circuit-level (Stim `rotated_memory_z`) for the surface code; code-capacity bit-flip noise for the qLDPC codes (stated wherever results are shown). The Ising comparison uses NVIDIA's own circuit and noise model and is kept in separate tables.
 * NVIDIA Ising weights are under the NVIDIA Open Model License and are downloaded at run time, never committed.
-* License: GNU GPLv3 (`GPL-3.0-only`) for the ParityBridge distribution; see [LICENSE](LICENSE). The inherited ccn code retains its original MIT notice in [LICENSES/MIT-ccn.txt](LICENSES/MIT-ccn.txt); see [NOTICE](NOTICE) for attribution and scope. Third-party code and model weights remain subject to their own licenses.
+* License: MIT for ParityBridge; see [LICENSE](LICENSE). The original ccn copyright and permission notice is preserved in [LICENSES/MIT-ccn.txt](LICENSES/MIT-ccn.txt); see [NOTICE](NOTICE) for attribution. Third-party code and model weights remain subject to their own licenses.

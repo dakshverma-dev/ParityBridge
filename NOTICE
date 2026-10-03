@@ -1,15 +1,14 @@
 ParityBridge
 Copyright (c) 2026 ParityBridge contributors
 
-ParityBridge is distributed under the GNU General Public License,
-version 3 only (SPDX-License-Identifier: GPL-3.0-only). See LICENSE.
+ParityBridge is distributed under the MIT License
+(SPDX-License-Identifier: MIT). See LICENSE.
 It is provided without warranty; see the license for details.
 
 This project is derived from ccn (https://github.com/Rhytam23/ccn).
 Copyright (c) 2026 qechybrid contributors
 The original ccn code was released under the MIT License. Its copyright
-and permission notice is preserved in LICENSES/MIT-ccn.txt. The original
-MIT grant for that material remains in effect.
+and permission notice is preserved in LICENSES/MIT-ccn.txt.
 
 External dependencies, third-party code, and separately downloaded NVIDIA
 Ising model weights remain governed by their respective licenses. This
