@@ -63,7 +63,7 @@ syndrome ──► batched min-sum BP (GPU) ──► converged? ──yes──
 
 **Unverified alternative (never run here):** replacing that CPU fallback with NVIDIA's closed-source CUDA-Q QEC `nv-qldpc-decoder` on the GPU (`cudaq_qec_adapter.py`). `cudaq-qec` was not installed in any of our runs, so no result in this repository uses it.
 
-**Experimental full pipeline** (results pending): the same two ideas combined on the surface code,
+**Experimental full pipeline** (measured on trained NVIDIA Ising weights): the same two ideas combined on the surface code,
 
 ```
 syndrome ──► NVIDIA Ising (GPU) ──► residual syndrome ──► batched BP (GPU) ──► CPU `ldpc` BP+OSD on non-converged shots ──► logical flip XOR Ising's partial flip
@@ -118,9 +118,9 @@ Confidence intervals, surface-code tables and the environment record: [docs/RESU
 | Local surface-code pre-decoder, first aggressive radius-1 rule | **Measured on a T4** (full profile, 200k shots): throughput ratio 0.62x-1.19x and extra logical errors at some points |
 | Local pre-decoder: conservative radius-2 rule and `fast` radius-1 rule, with the fp16 stage 1 | **Measured on a T4, quick profile only** (d=5 and 7, 20k shots) |
 | Learned MLP gate | **Measured on a T4**: resolved at most ~2 % of shots at d>=7, so it was not useful there; kept as an ablation |
-| NVIDIA Ising trained model | **One trained-weight T4 case** (d=9, p=0.003); its timing was invalid (compile warm-up inside the timed region); later runs produced no results |
+| NVIDIA Ising trained model | **Measured with trained weights** at d=9 across p=0.001, 0.003, 0.005 and 0.010; residual-syndrome and fallback statistics recorded |
 | CUDA-Q QEC `nv-qldpc-decoder` | **Not verified**: `cudaq-qec` was not installed in any run (the decoder is a closed-source library, see the [CUDA-Q QEC docs](https://nvidia.github.io/cudaq-qec/)) |
-| Full pipeline: Ising (GPU) -> GPU BP+OSD vs CPU baselines | **Not yet measured**: plumbing checked on CPU with random weights only |
+| Full pipeline: Ising (GPU) -> GPU BP+OSD vs CPU baselines | **Measured** at d=9 with trained Ising weights; 20k-shot benchmark and paired correctness audits committed under `results/` |
 
 ## Glossary
 
@@ -156,11 +156,15 @@ around NVIDIA's Ising pre-decoder, with explicit throughput, latency and logical
 **What we do not claim:** a real-time (single-shot, microsecond) GPU advantage (in run 3 the GPU surface-code path took 630-880 µs per single shot vs 18-38 µs for PyMatching, and was slower at 6 of 8 points at 256-shot micro-batches); any Ising or full-pipeline throughput result
 (`results/colab-ising/` and `results/colab-pipeline/` do not exist yet); equivalence of the local rule to MWPM (it is a heuristic).
 
-### The full-pipeline experiment (`scripts/run_full_pipeline.py`, run by notebook 04): results pending
-On identical shots (NVIDIA's circuit, trained Ising weights) it measures total wall-clock time and logical errors for CPU PyMatching, CPU BP+OSD, Ising + PyMatching, Ising + CPU BP+OSD,
-and the full pipeline Ising (GPU) -> GPU BP with CPU OSD fallback. Two CPU baselines are reported because "the CPU baseline" is ambiguous: CPU BP+OSD (same algorithm family, the like-for-like test of the GPU decoder)
-and PyMatching (the fastest practical CPU decoder, the test of practical usefulness). The experiment will determine whether the full pipeline improves on CPU BP+OSD and whether it can compete with PyMatching.
-In CPU plumbing runs (random weights, so the logical-error numbers are meaningless) CPU BP+OSD took about 13-33 ms per shot and PyMatching about 26-63 µs per shot at d=9.
+### The full-pipeline experiment (`scripts/run_full_pipeline.py`): measured
+
+On identical shots from NVIDIA's circuit with trained Ising weights, the experiment measures total wall-clock time and logical errors for CPU PyMatching, CPU BP+OSD, Ising + PyMatching, Ising + CPU BP+OSD, and the full Ising (GPU) -> GPU BP with CPU OSD fallback pipeline.
+
+At d=9, p=0.003 and 20,000 shots, CPU BP+OSD took 9,627.4 us/shot and the complete hybrid pipeline took 6,176.6 us/shot, giving a 1.56x speedup for the like-for-like BP+OSD workload. PyMatching remained substantially faster, so the hybrid is not presented as a replacement for PyMatching.
+
+Stress tests at p=0.001, 0.003, 0.005 and 0.010 recorded increasing CPU fallback fractions of 12.5%, 37.2%, 62.1% and 96.3%, respectively.
+
+Paired correctness audits at p=0.001, 0.003 and 0.005 used 20,000 identical shots per point and found zero shot-level disagreements between Ising + CPU BP+OSD and the GPU hybrid decoder (60,000/60,000 agreement).
 
 ## What is in the repo
 
@@ -173,7 +177,7 @@ In CPU plumbing runs (random weights, so the logical-error numbers are meaningle
 | Batched min-sum BP (CUDA/CPU) with BP+OSD fallback; circuit-level `DemBpOsd` | `bp_gpu.py`, `decoders.py` | unit-tested against a dense reference |
 | Bivariate-bicycle qLDPC codes, GF(2) row-space logical-failure check | `codes.py`, `gf2.py` | unit-tested |
 | Optional CUDA-Q QEC `nv-qldpc-decoder` backend | `cudaq_qec_adapter.py` | not tested (library not installed) |
-| NVIDIA Ising head-to-head and full pipeline | `ising_adapter.py`, `scripts/run_ising_bench.py`, `scripts/run_full_pipeline.py` | plumbing test with random weights |
+| NVIDIA Ising head-to-head and full pipeline | `ising_adapter.py`, `scripts/run_ising_bench.py`, `scripts/run_full_pipeline.py` | trained-weight benchmark + paired correctness audits |
 | Benchmark harness (LER with Wilson CIs, throughput, p50/p95/p99 single-shot latency, 256-shot micro-batch latency, environment record) | `bench.py`, `scripts/run_benchmarks.py` | unit-tested |
 | Results website (GitHub Pages ready) | `docs/index.html` (built by `scripts/make_report.py`) | element-id test |
 
@@ -223,7 +227,7 @@ powershell -ExecutionPolicy Bypass -File scripts/setup.ps1     # Windows: create
 
 * **Run 1 (first code):** GPU BP was slower than the C++ `ldpc` (ratio 0.07-0.34); the first surface-code pre-decoder reached at most 1.25.
 * **Run 2 (full profile, BP rewrite):** qLDPC ratio 0.98-1.58 with equal logical-error counts; the first (aggressive) surface-code rule 0.62-1.19 with extra logical errors at some points.
-* **Ising head-to-head:** one trained-weight case (d=9, p=0.003: 2.9 % of syndrome weight left, 47 % of shots fully resolved); its timing was invalid and later attempts produced no results.
+* **Ising head-to-head:** the original trained-weight timing at d=9, p=0.003 was invalid because compile/warm-up occurred inside the timed region. The corrected implementation now warms up before timing and measures the complete trained-Ising pipeline separately; the corrected d=9, p=0.003 benchmark leaves 2.94 % residual syndrome weight.
 * **Run 3 (historical radius-1/2 code, quick profile):** the conservative radius-2 rule 1.08-1.32 with one extra logical error at one point; the `fast` radius-1 rule 0.90-2.53 with extra errors at one point.
 
 Full chronology with the numbers behind each statement: [docs/HISTORY.md](docs/HISTORY.md).
