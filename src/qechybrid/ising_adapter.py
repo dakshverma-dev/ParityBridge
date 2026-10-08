@@ -226,11 +226,13 @@ def run_comparison(ctx, lat_shots: int = 200, log=print) -> list[dict]:
 def run_full_pipeline(ctx, cpu_shots: int = 1000, max_iter: int = 30, log=print) -> list[dict]:
     """End-to-end comparison on identical shots:
 
-      CPU baselines : PyMatching; CPU BP+OSD (ldpc)                      (BP+OSD on the first `cpu_shots` shots only: it is slow)
-      AI pre-decoder: NVIDIA Ising + PyMatching; Ising + CPU BP+OSD
-      FULL PIPELINE : NVIDIA Ising (GPU) -> GPU BP (+ CPU OSD fallback for the shots BP cannot resolve)
+      CPU baselines : PyMatching; CPU BP+OSD-0 (ldpc)                  (BP+OSD-0 on the first `cpu_shots` shots only: it is slow)
+      AI pre-decoder: NVIDIA Ising + PyMatching; Ising + CPU BP+OSD-0
+      FULL PIPELINE : NVIDIA Ising (GPU) -> GPU BP (+ CPU OSD-0 fallback for the shots BP cannot resolve)
 
-    Every row reports logical errors and total wall-clock time (stage 1 + stage 2, transfers included, GPU-synchronised).
+    Every row reports logical errors and total wall-clock time. The full-pipeline
+    timing includes Ising inference, GPU-side postprocessing, GPU BP, CPU fallback,
+    and the host transfer of the partial logical bit; GPU timers are synchronized.
     """
     import torch
 
@@ -262,23 +264,43 @@ def run_full_pipeline(ctx, cpu_shots: int = 1000, max_iter: int = 30, log=print)
     cpu_osd = CpuBpOsd(dm.H, dm.priors, max_iter=max_iter, osd_order=0, osd_method="osd_0")
     gpu_dec = DemBpOsd(dm, device=dev, max_iter=max_iter)
 
-    # --- CPU baseline 2: BP+OSD on raw syndromes (subset) ---
+    # --- CPU baseline 2: BP+OSD-0 on raw syndromes (subset) ---
     try:
         t0 = time.perf_counter()
         e = cpu_osd.decode_batch(det[:k])
         t = time.perf_counter() - t0
-        add("CPU: BP+OSD (ldpc)", int((gpu_dec.obs_from_errors(e)[:, 0] != obs[:k]).sum()), k, 0.0, t, extra=f"first {k} shots only")
+        add("CPU: BP+OSD-0 (ldpc)", int((gpu_dec.obs_from_errors(e)[:, 0] != obs[:k]).sum()), k, 0.0, t, extra=f"first {k} shots only")
     except Exception as exc:
-        log(f"  CPU BP+OSD failed: {type(exc).__name__}: {exc}")
+        log(f"  CPU BP+OSD-0 failed: {type(exc).__name__}: {exc}")
 
-    # --- Ising stage 1 (GPU), timed once on the full batch; reused by the three AI rows ---
-    ising_warmup(ctx, det)  # compile once for the fixed chunk shape (outside the timed region)
+    # --- Ising stage 1 (GPU), timed once on the full batch ---
+    # Compile/warm-up is outside the measurement. GPU postprocessing that converts the
+    # model output into residual/flip tensors is included in stage 1.
+    ising_warmup(ctx, det)
     t0 = now(dev)
     out = ising_forward(ctx, det)
-    t_pd = now(dev) - t0
     flip_t = out[:, 0].round().to(torch.uint8)
     res_t = out[:, 1:].round().to(torch.uint8)
-    flip = flip_t.cpu().numpy()
+    t_pd = now(dev) - t0
+
+    # --- FULL PIPELINE: Ising (GPU) -> GPU BP (+ OSD-0 fallback) ---
+    # Keep the residual on the GPU. The partial logical bit is transferred once,
+    # after GPU BP/CPU fallback, and that transfer is included in stage 2.
+    try:
+        gpu_dec.decode_batch(res_t[:256])  # warm up kernels
+        t0 = now(dev)
+        g = gpu_dec.decode_batch(res_t)
+        flip_full = flip_t.cpu().numpy()
+        t2 = now(dev) - t0
+        kept = float(res_t.sum().item()) / max(1.0, float(det.sum()))
+        add("FULL: NVIDIA Ising (GPU) -> GPU BP (+OSD-0 fallback)", int(((flip_full ^ g[:, 0]) != obs).sum()), n, t_pd, t2, kept=kept,
+            extra=f"BP fallback to CPU OSD-0 on {100 * gpu_dec.last['fallback_frac']:.1f}% of shots")
+    except Exception as exc:
+        log(f"  FULL pipeline failed: {type(exc).__name__}: {exc}")
+
+    # Host copies below are diagnostics for the CPU comparison rows and are deliberately
+    # outside the full-pipeline timing above.
+    flip = flip_full if "flip_full" in locals() else flip_t.cpu().numpy()
     res = res_t.cpu().numpy()
     kept = float(res.sum()) / max(1.0, float(det.sum()))
 
@@ -287,24 +309,13 @@ def run_full_pipeline(ctx, cpu_shots: int = 1000, max_iter: int = 30, log=print)
     pmr = np.asarray(m.decode_batch(res), dtype=np.uint8).reshape(n, -1)[:, 0]
     add("NVIDIA Ising (GPU) + pymatching (CPU)", int(((flip ^ pmr) != obs).sum()), n, t_pd, time.perf_counter() - t0, kept=kept)
 
-    # --- AI + CPU BP+OSD (subset) ---
+    # --- AI + CPU BP+OSD-0 (subset) ---
     try:
         t0 = time.perf_counter()
         e = cpu_osd.decode_batch(res[:k])
         t = time.perf_counter() - t0
         pred = flip[:k] ^ gpu_dec.obs_from_errors(e)[:, 0]
-        add("NVIDIA Ising (GPU) + BP+OSD (CPU)", int((pred != obs[:k]).sum()), k, t_pd * k / n, t, kept=kept, extra=f"BP+OSD stage on first {k} shots; stage 1 scaled to {k}")
+        add("NVIDIA Ising (GPU) + BP+OSD-0 (CPU)", int((pred != obs[:k]).sum()), k, t_pd * k / n, t, kept=kept, extra=f"BP+OSD-0 stage on first {k} shots; stage 1 scaled to {k}")
     except Exception as exc:
-        log(f"  Ising + CPU BP+OSD failed: {type(exc).__name__}: {exc}")
-
-    # --- FULL PIPELINE: Ising (GPU) -> GPU BP (+ OSD fallback) ---
-    try:
-        gpu_dec.decode_batch(res_t[:256])  # warm up kernels
-        t0 = now(dev)
-        g = gpu_dec.decode_batch(res_t)  # residual stays on the GPU for the BP stage
-        t2 = now(dev) - t0
-        add("FULL: NVIDIA Ising (GPU) -> GPU BP (+OSD fallback)", int(((flip ^ g[:, 0]) != obs).sum()), n, t_pd, t2, kept=kept,
-            extra=f"BP fallback to CPU OSD on {100 * gpu_dec.last['fallback_frac']:.1f}% of shots")
-    except Exception as exc:
-        log(f"  FULL pipeline failed: {type(exc).__name__}: {exc}")
+        log(f"  Ising + CPU BP+OSD-0 failed: {type(exc).__name__}: {exc}")
     return rows
