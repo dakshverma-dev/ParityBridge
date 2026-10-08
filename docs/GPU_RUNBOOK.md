@@ -40,8 +40,8 @@ requirements: the commands above need a host on which this Python code can run.
 
 ## Full pipeline (AI pre-decoder + GPU decoder vs CPU baselines)
 `scripts/run_full_pipeline.py` (run by notebook 04 after the Ising step, tag `colab-pipeline`) measures, on identical shots, total time and logical errors for:
-CPU PyMatching, CPU BP+OSD, NVIDIA Ising + PyMatching, Ising + CPU BP+OSD, and the full pipeline **Ising (GPU) -> GPU BP with CPU OSD fallback**.
-The CPU BP+OSD rows use `--cpu-shots` (default 1000) because BP+OSD costs milliseconds per shot on this circuit; per-shot times are directly comparable.
+CPU PyMatching, CPU BP+OSD-0, NVIDIA Ising + PyMatching, Ising + CPU BP+OSD-0, and the full pipeline **Ising (GPU) -> GPU BP with CPU OSD-0 fallback**.
+The CPU BP+OSD-0 rows use `--cpu-shots` (default 1000) because BP+OSD-0 costs milliseconds per shot on this circuit. For the publishable like-for-like benchmark, set `--cpu-shots` equal to `--shots` (the final d=9 validation used 20,000/20,000 shots).
 
 ## Troubleshooting
 | Symptom | Fix |
