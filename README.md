@@ -151,20 +151,21 @@ around NVIDIA's Ising pre-decoder, with explicit throughput, latency and logical
 1. GPU BP gives equal logical-error counts to `ldpc` on the same shots and a GPU/CPU batch-throughput ratio of 0.98x-1.58x on a T4 (qLDPC, code-capacity noise; best case [[144,12,12]], p=0.02).
 2. On a T4 (run 3, quick profile, d=5 and 7, 20k shots) the conservative radius-2 rule has a throughput ratio of 1.08x-1.32x with 72 vs 71 logical errors at d=7, p=0.004 and equal counts at the other three points; the fast `radius=1` rule reaches 2.53x (d=7, p=0.002) with 80 vs 71 errors at d=7, p=0.004.
    This is a small quick-profile result; the earlier full run used the first aggressive rule and a slower stage 1 (0.62x-1.19x).
-3. In one case (d=9, p=0.003) NVIDIA's trained Ising model left 2.9 % of the syndrome weight and resolved 47 % of shots completely. Its end-to-end timing has not been validly measured.
+3. In one case (d=9, p=0.003) NVIDIA's trained Ising model left 2.9 % of the syndrome weight and resolved 47 % of shots completely.
 
-**What we do not claim:** a real-time (single-shot, microsecond) GPU advantage (in run 3 the GPU surface-code path took 630-880 µs per single shot vs 18-38 µs for PyMatching, and was slower at 6 of 8 points at 256-shot micro-batches); any Ising or full-pipeline throughput result
-(`results/colab-ising/` and `results/colab-pipeline/` do not exist yet); equivalence of the local rule to MWPM (it is a heuristic).
+**Timing note:** the stored `final-hybrid-d9-p003` and stress/reproducibility pipeline CSVs were generated before the latest full-pipeline timing-boundary correction. They remain useful historical evidence, but the corrected timings should be regenerated before using the 1.56x number as the final performance claim.
+
+**What we do not claim:** a real-time (single-shot, microsecond) GPU advantage; superiority over PyMatching; universal speedup across all noise levels; or equivalence of the hybrid to the CPU decoder beyond the tested paired-audit configurations. The full-pipeline result is specifically a batch/end-to-end workload comparison against CPU BP+OSD-0.
 
 ### The full-pipeline experiment (`scripts/run_full_pipeline.py`): measured
 
-On identical shots from NVIDIA's circuit with trained Ising weights, the experiment measures total wall-clock time and logical errors for CPU PyMatching, CPU BP+OSD, Ising + PyMatching, Ising + CPU BP+OSD, and the full Ising (GPU) -> GPU BP with CPU OSD fallback pipeline.
+On identical shots from NVIDIA's circuit with trained Ising weights, the experiment measures total wall-clock time and logical errors for CPU PyMatching, CPU BP+OSD-0, Ising + PyMatching, Ising + CPU BP+OSD-0, and the full Ising (GPU) -> GPU BP with CPU OSD fallback pipeline.
 
-At d=9, p=0.003 and 20,000 shots, CPU BP+OSD took 9,627.4 us/shot and the complete hybrid pipeline took 6,176.6 us/shot, giving a 1.56x speedup for the like-for-like BP+OSD workload. PyMatching remained substantially faster, so the hybrid is not presented as a replacement for PyMatching.
+At d=9, p=0.003 and 20,000 shots, The archived validation run measured CPU BP+OSD-0 at 9,627.4 us/shot and the complete hybrid pipeline at 6,176.6 us/shot, giving a 1.56x speedup for the like-for-like BP+OSD-0 workload. The timing code has since been tightened to include the partial-logical host transfer inside the full-pipeline measurement; therefore this archived 1.56x figure must be regenerated before it is treated as the corrected timing. PyMatching remained substantially faster, so the hybrid is not presented as a replacement for PyMatching.
 
 Stress tests at p=0.001, 0.003, 0.005 and 0.010 recorded increasing CPU fallback fractions of 12.5%, 37.2%, 62.1% and 96.3%, respectively.
 
-Paired correctness audits at p=0.001, 0.003 and 0.005 used 20,000 identical shots per point and found zero shot-level disagreements between Ising + CPU BP+OSD and the GPU hybrid decoder (60,000/60,000 agreement).
+Paired correctness audits at p=0.001, 0.003 and 0.005 used 20,000 identical shots per point and found zero shot-level disagreements between Ising + CPU BP+OSD-0 and the GPU hybrid decoder (60,000/60,000 agreement).
 
 ## What is in the repo
 
@@ -174,7 +175,7 @@ Paired correctness audits at p=0.001, 0.003 and 0.005 used 20,000 identical shot
 | Local GPU pre-decoder (clique-style heuristic, not provably MWPM-equivalent) | `local_predecoder.py` | unit-tested; CPU/GPU code paths checked for equality |
 | Learned MLP gate | `gate.py` | unit-tested |
 | Hybrid surface-code pipeline + trivial non-AI baseline | `pipeline.py` | unit-tested |
-| Batched min-sum BP (CUDA/CPU) with BP+OSD fallback; circuit-level `DemBpOsd` | `bp_gpu.py`, `decoders.py` | unit-tested against a dense reference |
+| Batched min-sum BP (CUDA/CPU) with BP+OSD-0 fallback; circuit-level `DemBpOsd` | `bp_gpu.py`, `decoders.py` | unit-tested against a dense reference |
 | Bivariate-bicycle qLDPC codes, GF(2) row-space logical-failure check | `codes.py`, `gf2.py` | unit-tested |
 | Optional CUDA-Q QEC `nv-qldpc-decoder` backend | `cudaq_qec_adapter.py` | not tested (library not installed) |
 | NVIDIA Ising head-to-head and full pipeline | `ising_adapter.py`, `scripts/run_ising_bench.py`, `scripts/run_full_pipeline.py` | trained-weight benchmark + paired correctness audits |

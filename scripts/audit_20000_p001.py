@@ -75,7 +75,7 @@ res = (
 
 print(f"Residual shape: {res.shape}")
 
-print("Running Ising + CPU BP+OSD...")
+print("Running Ising + CPU BP+OSD-0...")
 cpu_errors = cpu.decode_batch(res)
 cpu_residual_logical = hybrid.obs_from_errors(cpu_errors)[:, 0]
 cpu_logical = flip ^ cpu_residual_logical
@@ -101,5 +101,5 @@ print(f"Decoder agreement:         {int(agree.sum())}/{SHOTS}")
 print(f"Decoder disagreement:      {int((~agree).sum())}")
 print(f"CPU errors:                {int((~cpu_correct).sum())}")
 print(f"GPU hybrid errors:         {int((~gpu_correct).sum())}")
-print(f"CPU fallback:              {hybrid.last['n_fallback']}/{SHOTS}")
+print(f"CPU fallback to OSD-0:              {hybrid.last['n_fallback']}/{SHOTS}")
 print(f"Fallback fraction:         {100 * hybrid.last['fallback_frac']:.1f}%")

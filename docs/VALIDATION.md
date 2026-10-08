@@ -16,7 +16,7 @@ Validated against the checkout based on commit `1e0c610`; local work is on
 | Stale pre-decoder docstring / “safe” | Confirmed. | Updated the comment and renamed new radius-2 rows to “conservative”; historical raw row names remain unchanged. |
 | Radius 2 had no added errors in the saved quick run | This part of the feedback was inaccurate. The stored T4 CSV has **72 vs 71** at d=7, p=0.004, with equal counts at the other three points. | Corrected README and summary-generator claims. Neither rule has an accuracy guarantee. |
 | Frontier and landing-page presentation | Recommendations, rather than code defects. | Added static and interactive accuracy/throughput trade-off plots, a compact README introduction, explicit non-claims and an early reproduction command. |
-| Trained Ising/full-pipeline performance | Still lacks valid complete measurements in this checkout. | Kept it explicitly experimental and de-emphasized it in the landing-page findings; no model-performance claim was added. |
+| Trained Ising/full-pipeline performance | Final d=9, p=0.003 validation now exists with trained weights, plus stress tests and paired audits. | Added the measured pipeline results, corrected the full-pipeline timing boundary, and explicit BP+OSD-0 labeling; README avoids universal or PyMatching-superiority claims. |
 
 ## Verification
 

@@ -24,7 +24,7 @@ Two instantiations share the same idea (cheap parallel stage first, the global d
 |---|---|---|
 | Stage 1 | `LocalPreDecoder` (or `Gate` MLP) | `BatchedMinSumBP` (PyTorch) |
 | "Easy" means | residual syndrome empty | BP converged to a syndrome-consistent estimate |
-| Stage 2 | PyMatching on the residual | CPU `ldpc` BP+OSD on non-converged shots (measured); CUDA-Q QEC GPU decoder (never run here) |
+| Stage 2 | PyMatching on the residual | CPU `ldpc` BP+OSD-0 on non-converged shots in the measured full pipeline; CUDA-Q QEC GPU decoder (never run here) |
 | Module | `pipeline.HybridDecoder` | `decoders.HybridBpOsd` |
 
 ## Modules (`src/qechybrid/`)
@@ -50,7 +50,7 @@ Two instantiations share the same idea (cheap parallel stage first, the global d
 * **Calibrated on validation data, not guaranteed.** The gate's threshold is chosen on a separate validation set so that it adds at most 5 % extra errors relative to MWPM there; on test data this did not always hold (d=7, p=0.001: 20 vs 5 logical errors).
 * **Edge-list BP with active-set shrinking.** Messages live on the edges (padded to the maximum check/variable degree) and shots drop out of the working batch as they converge, so one hard shot does not keep the whole batch iterating.
   It was unit-tested against the dense reference for identical output. Memory scales with batch x checks x maximum check degree; `chunk` is chosen automatically for large irregular matrices.
-* **Honest timing.** GPU stages are timed with `torch.cuda.synchronize()`; throughput includes host/device transfers; latency is single-shot.
+* **Honest timing.** GPU stages are timed with `torch.cuda.synchronize()`. The measured full-pipeline path keeps the Ising residual on the GPU, includes GPU BP and CPU-fallback wall time, and includes the host transfer of the partial logical bit inside the full-pipeline timed region. Latency is single-shot.
 
 ## Extension points
 

@@ -54,6 +54,7 @@ timers and transfers only one host minibatch at a time.
 ## Baselines
 * Surface: PyMatching (CPU) on the raw syndrome; plus a trivial non-AI shortcut (empty syndrome => no flip) so AI/GPU gains are not overstated.
 * qLDPC: `ldpc.BpOsdDecoder` (C++), min-sum, 50 iterations, OSD-CS order 7, scaling 0.8.
+* NVIDIA Ising surface full-pipeline: `ldpc.BpOsdDecoder` configured as min-sum, 30 iterations, OSD-0, scaling 0.8 for both the CPU baseline and CPU fallback path.
 
 ## Fairness rules
 1. CPU and GPU numbers are compared **on the same machine/session** (Colab: 2 vCPU + T4). Do not mix numbers across machines.
@@ -70,6 +71,6 @@ timers and transfers only one host minibatch at a time.
 ## Known limitations
 * CPU PyMatching is extremely fast at small distance; expect GPU benefit to appear at larger d and larger batches.
 * Code-capacity qLDPC results do not transfer to circuit-level noise.
-* The CUDA-Q QEC adapter has not been verified against a real install. The Ising adapter is verified for plumbing with random weights only; trained-weight results need a user-supplied Hugging Face token.
+* The CUDA-Q QEC adapter has not been verified against a real install. The Ising adapter has been exercised with trained weights in the final validation run; reproducing those trained-weight runs requires a user-supplied Hugging Face token.
 * The Ising comparison uses NVIDIA's circuit (25-parameter noise, boundary detectors, basis X), which differs from the plain Stim circuit used elsewhere, so those rows are kept in a separate table and never mixed.
 * Dense BP memory scales as B x m x n.

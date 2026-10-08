@@ -22,7 +22,7 @@ ap.add_argument("--model-id", type=int, default=1)
 ap.add_argument("--distances", type=int, nargs="+", default=[9, 13])
 ap.add_argument("--ps", type=float, nargs="+", default=[0.003, 0.005])
 ap.add_argument("--shots", type=int, default=20000)
-ap.add_argument("--cpu-shots", type=int, default=1000, help="CPU BP+OSD baselines run on this many shots only")
+ap.add_argument("--cpu-shots", type=int, default=1000, help="CPU BP+OSD-0 baselines run on this many shots only")
 ap.add_argument("--device", default="auto")
 ap.add_argument("--tag", default="pipeline")
 a = ap.parse_args()
@@ -36,6 +36,7 @@ meta["ising_weights"] = "trained" if weights else "RANDOM (plumbing check only)"
 meta["cpu_bposd_shots"] = a.cpu_shots
 (out / "meta.json").write_text(json.dumps(meta, indent=2))
 rows = []
+failed = False
 for d in a.distances:
     for p in a.ps:
         try:
@@ -45,6 +46,7 @@ for d in a.distances:
         except Exception:
             print(f"!! case d={d} p={p} failed:")
             traceback.print_exc()
+            failed = True
         finally:
             ctx = None
             gc.collect()
@@ -52,4 +54,6 @@ for d in a.distances:
                 import torch
 
                 torch.cuda.empty_cache()
+if failed:
+    raise SystemExit("one or more full-pipeline benchmark cases failed; refusing to report success")
 print("wrote", out / "pipeline.csv")
