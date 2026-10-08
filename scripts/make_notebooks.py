@@ -78,7 +78,7 @@ if RUN_ISING:
         subprocess.run(["git", "clone", "--depth", "1", "https://github.com/NVIDIA/Ising-Decoding.git", "third_party/Ising-Decoding"], check=True)
     subprocess.run("pip -q install safetensors omegaconf hydra-core huggingface_hub beliefmatching", shell=True)
     subprocess.run("python scripts/run_ising_bench.py --repo third_party/Ising-Decoding --download --device cuda --distances 9 13 --ps 0.003 0.005 --shots 20000 --tag colab-ising", shell=True)
-    subprocess.run("python scripts/run_full_pipeline.py --repo third_party/Ising-Decoding --download --device cuda --distances 9 13 --ps 0.003 0.005 --shots 20000 --cpu-shots 1000 --tag colab-pipeline", shell=True)"""
+    subprocess.run("python scripts/run_full_pipeline.py --repo third_party/Ising-Decoding --download --device cuda --distances 9 13 --ps 0.003 0.005 --shots 20000 --cpu-shots 20000 --tag colab-pipeline", shell=True)"""
 
 CUDAQ_CELL = """import subprocess
 if RUN_CUDAQ:
