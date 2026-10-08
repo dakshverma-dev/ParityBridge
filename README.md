@@ -10,7 +10,7 @@ syndrome → parallel pre-decoder → residual syndrome → strong global decode
 * Historical T4 qLDPC runs reached 0.98–1.58× CPU batch throughput with equal logical-error counts on the tested shots. They used a single throughput repetition.
 * Corrected local T600 full measurements show radius 2 slower at every surface point, with five additional errors across four points. Radius 1's marginal aggregate gains have paired timing ranges crossing 1× and add errors. Historical T4 timings still need a corrected T4 rerun.
 * Single-shot latency favored the CPU on the measured small codes. Batch throughput is a separate metric.
-* Trained Ising/full-pipeline performance remains unverified; the learned MLP is an optional ablation.
+* Trained Ising/full-pipeline performance is experimentally measured at d=9 with trained weights; the learned MLP is an optional ablation.
 
 **Not claimed:** a real-time GPU advantage, MWPM equivalence of the local heuristic,
 or statistically established accuracy equivalence from matching error counts.
@@ -120,7 +120,7 @@ Confidence intervals, surface-code tables and the environment record: [docs/RESU
 | Learned MLP gate | **Measured on a T4**: resolved at most ~2 % of shots at d>=7, so it was not useful there; kept as an ablation |
 | NVIDIA Ising trained model | **Measured with trained weights** at d=9 across p=0.001, 0.003, 0.005 and 0.010; residual-syndrome and fallback statistics recorded |
 | CUDA-Q QEC `nv-qldpc-decoder` | **Not verified**: `cudaq-qec` was not installed in any run (the decoder is a closed-source library, see the [CUDA-Q QEC docs](https://nvidia.github.io/cudaq-qec/)) |
-| Full pipeline: Ising (GPU) -> GPU BP+OSD vs CPU baselines | **Measured** at d=9 with trained Ising weights; 20k-shot benchmark and paired correctness audits committed under `results/` |
+| Full pipeline: Ising (GPU) -> GPU BP + CPU OSD-0 fallback vs CPU baselines | **Measured** at d=9 with trained Ising weights; 20k-shot benchmark and paired correctness audits committed under `results/` |
 
 ## Glossary
 
