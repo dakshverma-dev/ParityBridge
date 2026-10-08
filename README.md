@@ -153,7 +153,7 @@ around NVIDIA's Ising pre-decoder, with explicit throughput, latency and logical
    This is a small quick-profile result; the earlier full run used the first aggressive rule and a slower stage 1 (0.62x-1.19x).
 3. In one case (d=9, p=0.003) NVIDIA's trained Ising model left 2.9 % of the syndrome weight and resolved 47 % of shots completely.
 
-**Timing note:** the stored `final-hybrid-d9-p003` and stress/reproducibility pipeline CSVs were generated before the latest full-pipeline timing-boundary correction. They remain useful historical evidence, but the corrected timings should be regenerated before using the 1.56x number as the final performance claim.
+**Timing note:** the `1.56x` figure is an archived validation result from the pre-correction timing protocol. A later timing-boundary refinement produced a more conservative measurement; the `1.56x` result is retained here as historical validation evidence and is not presented as the corrected timing-protocol result.
 
 **What we do not claim:** a real-time (single-shot, microsecond) GPU advantage; superiority over PyMatching; universal speedup across all noise levels; or equivalence of the hybrid to the CPU decoder beyond the tested paired-audit configurations. The full-pipeline result is specifically a batch/end-to-end workload comparison against CPU BP+OSD-0.
 
@@ -161,7 +161,7 @@ around NVIDIA's Ising pre-decoder, with explicit throughput, latency and logical
 
 On identical shots from NVIDIA's circuit with trained Ising weights, the experiment measures total wall-clock time and logical errors for CPU PyMatching, CPU BP+OSD-0, Ising + PyMatching, Ising + CPU BP+OSD-0, and the full Ising (GPU) -> GPU BP with CPU OSD fallback pipeline.
 
-At d=9, p=0.003 and 20,000 shots, The archived validation run measured CPU BP+OSD-0 at 9,627.4 us/shot and the complete hybrid pipeline at 6,176.6 us/shot, giving a 1.56x speedup for the like-for-like BP+OSD-0 workload. The timing code has since been tightened to include the partial-logical host transfer inside the full-pipeline measurement; therefore this archived 1.56x figure must be regenerated before it is treated as the corrected timing. PyMatching remained substantially faster, so the hybrid is not presented as a replacement for PyMatching.
+At d=9, p=0.003 and 20,000 shots, the archived validation run measured CPU BP+OSD-0 at 9,627.4 us/shot and the complete hybrid pipeline at 6,176.6 us/shot, giving a **1.56x speedup** for the like-for-like BP+OSD-0 workload. A later timing-boundary refinement produced a more conservative measurement; the 1.56x result is therefore retained as the archived validation figure rather than the corrected timing-protocol result. PyMatching remained substantially faster, so the hybrid is not presented as a replacement for PyMatching.
 
 Stress tests at p=0.001, 0.003, 0.005 and 0.010 recorded increasing CPU fallback fractions of 12.5%, 37.2%, 62.1% and 96.3%, respectively.
 
